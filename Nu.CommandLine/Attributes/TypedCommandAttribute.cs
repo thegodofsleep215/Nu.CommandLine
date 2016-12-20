@@ -15,11 +15,13 @@ namespace Nu.CommandLine.Attributes
         {
             var par = methodInfo.GetParameters();
             var sb = new StringBuilder();
-            sb.Append(Command + " ");
+            var name = string.IsNullOrEmpty(Command) ? methodInfo.Name : Command;
+            Command = name;
+            sb.Append($"{name} ");
             foreach (var p in par)
             {
                 var temp = p.ParameterType.ToString().Split('.');
-                sb.Append(string.Format("<{0} {1}>, ", temp[temp.Length - 1], p.Name));
+                sb.Append($"<{temp[temp.Length - 1]} {p.Name}>, ");
             }
 
             string u = sb.ToString().TrimEnd(',', ' ');
@@ -36,6 +38,13 @@ namespace Nu.CommandLine.Attributes
 
         public TypedCommandAttribute()
         {
+            
+        }
+
+        public void ResolveCommandName(MethodInfo method)
+        {
+            var name = string.IsNullOrEmpty(Command) ? method.Name : Command;
+            Command = name;
         }
     }
 }

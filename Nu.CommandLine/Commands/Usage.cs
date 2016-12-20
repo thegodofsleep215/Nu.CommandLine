@@ -1,4 +1,4 @@
-using Nu.CommandLine.Communication;
+using System.Linq;
 
 namespace Nu.CommandLine.Commands
 {
@@ -32,6 +32,12 @@ namespace Nu.CommandLine.Commands
             return true;
         }
 
+        public virtual bool MatchesUsage(string[] parameterNames)
+        {
+            if (parameterNames.Length != Method.ParameterNames.Length) return false;
+            return Method.ParameterNames.All(parameterNames.Contains);
+        }
+
         /// <summary>
         /// Default constructor.
         /// </summary>
@@ -45,14 +51,6 @@ namespace Nu.CommandLine.Commands
             Desc = desc;
             NumberOfParams = nop;
             Method = method;
-        }
-
-        public Usage(string usage, string desc, int nop, CommandDelegate method)
-        {
-            Use = usage;
-            Desc = desc;
-            NumberOfParams = nop;
-            Method = new CommandDelegateExecption(method);
         }
     }
 }

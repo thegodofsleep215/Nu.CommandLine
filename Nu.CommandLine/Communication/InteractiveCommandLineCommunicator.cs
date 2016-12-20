@@ -590,5 +590,4 @@ namespace Nu.CommandLine.Communication
         #endregion
 
     }
-
 }

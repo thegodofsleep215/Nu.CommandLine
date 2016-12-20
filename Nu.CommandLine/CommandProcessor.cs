@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using Nu.CommandLine.Attributes;
 using Nu.CommandLine.Commands;
 using Nu.CommandLine.Communication;
 
@@ -18,16 +18,25 @@ namespace Nu.CommandLine
             commandContainer = new CommandContainer();
             this.communicator = communicator ?? new InteractiveCommandLineCommunicator("cmd");
             this.communicator.ProcessCommand += ProcessCommand;
+            this.communicator.ProcessCommandNamedArguments += ProcessCommandNamedArguments ;
             this.communicator.GetCommandsCallBack = commandContainer.GetCommands;
-            commandContainer.AddCommand(GetType().FullName, "exit", new Usage("exit", "Exits the session of the shell.", 0, Exit));
-            commandContainer.AddCommand(GetType().FullName, "help", new[] { new Usage("help", "Displays help for all commands", 0, Help), 
-                new Usage("help <client_command>", "Dispalys the help for <command>.", 1, Help) });
-            commandContainer.AddCommand(GetType().FullName, "list", new Usage("list", "Displays all commands.", 0, List));
-            commandContainer.AddCommand(GetType().FullName, "list", new Usage("list <partial_command_name>|-i|-e", "If <partial_command_name> is provided then all commands containing it will be displayed. If -i is provded all internal commands will be displayed, and if -e is provided all external commands will be displayed.", 1, List));
-            commandContainer.AddCommand(GetType().FullName, "list", new Usage("list -i|-e <partial_command_name>", "Lists all internal (-i) or external (-e) commands that containt <partial_command_name>", 2, List));
-
+            RegisterObject(this);
             commandContainer.RegisterObject(communicator);
 
+        }
+
+        private string ProcessCommandNamedArguments(string command, Dictionary<string, object> parameters)
+        {
+            if (commandContainer.HasCommand(command))
+            {
+                if (commandContainer.HasUsage(command, parameters))
+                {
+                    string output = commandContainer.Invoke(command, parameters, out output) ? output : "An unknown error occurred while executing the command.";
+                    return output;
+                }
+                return "Invalid parameters.";
+            }
+            return "Bad Command.";
         }
 
         string ProcessCommand(string command, List<object> parameters)
@@ -69,17 +78,30 @@ namespace Nu.CommandLine
         
         #region Client Command Methods
 
-        private string Exit(string commandName, string[] parameters)
-        {
-            Stop();
-            return "Shutting Down.";
-        }
-
-        private string Help(string commandName, string[] parameters)
+        [TypedCommand("help", "Displays help for all commands.")]
+        private string Help()
         {
             string helptext = "";
 
-            if (!parameters.Any())
+            helptext += "\n HELP FORMAT:\n";
+            helptext += " <command>\n";
+            helptext += "   <Num Of Param For Overload>: <Help Text>\n";
+            helptext += "              -- OR --\n";
+            helptext += "   <Calling Convention>: <Help Text>\n";
+
+            helptext = commandContainer.GetCommands()
+                .Aggregate(helptext, (current, c) => current + PrintHelp(commandContainer.GetCommand(c), c));
+
+            return helptext;
+        }
+
+        [TypedCommand("help", "Displays help for <command>")]
+        private string Help(string command)
+        {
+            string helptext = "";
+
+
+            if (commandContainer.HasCommand(command))
             {
                 helptext += "\n HELP FORMAT:\n";
                 helptext += " <command>\n";
@@ -87,33 +109,19 @@ namespace Nu.CommandLine
                 helptext += "              -- OR --\n";
                 helptext += "   <Calling Convention>: <Help Text>\n";
 
-                helptext = commandContainer.GetCommands().Aggregate(helptext, (current, c) => current + PrintHelp(commandContainer.GetCommand(c), c));
+                helptext += PrintHelp(commandContainer.GetCommand(command), command);
             }
-            else if (parameters.Count() == 1)
-            {
-
-                if (commandContainer.HasCommand(parameters[0]))
-                {
-                    helptext += "\n HELP FORMAT:\n";
-                    helptext += " <command>\n";
-                    helptext += "   <Num Of Param For Overload>: <Help Text>\n";
-                    helptext += "              -- OR --\n";
-                    helptext += "   <Calling Convention>: <Help Text>\n";
-
-                    helptext += PrintHelp(commandContainer.GetCommand(parameters[0]), parameters[0]);
-                }
-                else
-                    helptext = String.Format("Could not find command ({0}).", parameters[0]);
-            }
+            else
+                helptext = $"Could not find command ({command}).";
             return helptext;
         }
 
         private string PrintHelp(Command cc, string c)
         {
-            string text = String.Format("\n {0}\n", c);
+            string text = $"\n {c}\n";
             foreach (Usage usage in cc.Usages)
             {
-                text += String.Format("   {0}: ", usage.Use);
+                text += $"   {usage.Use}: ";
                 text += PrintHelpText(usage.Desc, "       ");
                 text += "\n";
             }
@@ -135,19 +143,17 @@ namespace Nu.CommandLine
             return text;
         }
 
-        private string List(string commandName, string[] parameters)
+        [TypedCommand("list", "List all commands.")]
+        private string List()
         {
-            if (parameters.Count() == 2)
-            {
-                return string.Join("\n", commandContainer.GetCommands().Where(name => name.ToUpper().Contains(parameters[1].ToUpper())));
-            }
-            if(parameters.Count() == 1)
-            {
-                return string.Join("\n", commandContainer.GetCommands().Where(name => name.ToUpper().Contains(parameters[0].ToUpper())));
-            }
             return string.Join("\n", commandContainer.GetCommands());
         }
-        
+
+        [TypedCommand("list", "List all commands matching <str>")]
+        private string List(string str)
+        {
+                return string.Join("\n", commandContainer.GetCommands().Where(name => name.ToUpper().Contains(str.ToUpper())));
+        }
         #endregion
 
         public void Start()
@@ -166,4 +172,6 @@ namespace Nu.CommandLine
             commandContainer.RegisterObject(obj);
         }
     }
+
+
 }
