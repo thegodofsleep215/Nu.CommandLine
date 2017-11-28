@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\CommandLineException.cs" />
     <Compile Include="CommandProcessor.cs" />
     <Compile Include="Commands\BaseMethodExecution.cs" />
     <Compile Include="Communication\ConsoleCommunicator.cs" />

@@ -4,14 +4,33 @@ using System.Linq;
 using Nu.CommandLine.Attributes;
 using Nu.CommandLine.Commands;
 using Nu.CommandLine.Communication;
+using System.Reflection;
 
 namespace Nu.CommandLine
 {
+    public interface IActionContainer
+    { }
+
     public class CommandProcessor
     {
         private readonly ICommandCommunicator communicator;
 
         private readonly CommandContainer commandContainer;
+
+        public static CommandProcessor GenerateCommandProcessor(ICommandCommunicator communicator = null)
+        {
+            var cp = new CommandProcessor(communicator);
+            var t = typeof(IActionContainer);
+            var actionContainers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes()).Where(x => t.IsAssignableFrom(x)).Where(x => x.IsClass).ToList();
+            var badContainers = actionContainers.Where(ac => ac.GetConstructor(new Type[] { }) == null);
+
+            if (badContainers.Any())
+            {
+                throw new CommandLineException($"ActionContainers must have an empty public constructor. The following do not, {string.Join(", ", badContainers.Select(x => x.Name))}");
+            }
+
+            return cp;
+        }
 
         public CommandProcessor(ICommandCommunicator communicator = null)
         {
