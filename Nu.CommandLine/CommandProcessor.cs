@@ -27,6 +27,8 @@ namespace Nu.CommandLine
                 throw new CommandLineException($"ActionContainers must have an empty public constructor. The following do not, {string.Join(", ", badContainers.Select(x => x.Name))}");
             }
 
+            actionContainers.ForEach(x => cp.RegisterObject(Activator.CreateInstance(x.UnderlyingSystemType)));
+
             return cp;
         }
 
