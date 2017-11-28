@@ -8,8 +8,6 @@ using System.Reflection;
 
 namespace Nu.CommandLine
 {
-    public interface IActionContainer
-    { }
 
     public class CommandProcessor
     {

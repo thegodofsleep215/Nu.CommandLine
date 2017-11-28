@@ -58,6 +58,7 @@
     <Compile Include="Communication\ICommandCommunicator.cs" />
     <Compile Include="Commands\IMethodExecution.cs" />
     <Compile Include="Commands\MethodInfoExecution.cs" />
+    <Compile Include="IActionContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilies\Reflection.cs" />
     <Compile Include="Attributes\TypedCommandAttribute.cs" />
