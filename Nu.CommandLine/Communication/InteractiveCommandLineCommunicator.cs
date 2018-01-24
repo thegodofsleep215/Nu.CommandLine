@@ -283,7 +283,7 @@ namespace Nu.CommandLine.Communication
             Console.CursorLeft = promptLength;
         }
 
-        #region Tab Matching Methods
+        #region Tab Matching Method
 
         /// <summary>
         /// Tab completes text based off of internal commands then CommCmd commands.
@@ -482,7 +482,7 @@ namespace Nu.CommandLine.Communication
 
         #endregion
 
-        #region Client Command Methods
+        #region Client Command Method
 
         [TypedCommand("loadScript", "loads a script for execution.")]
         public string Load(string filename)

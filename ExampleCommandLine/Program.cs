@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Nu.CommandLine;
 using Nu.CommandLine.Attributes;
 using Nu.CommandLine.Communication;
@@ -42,10 +43,11 @@ namespace ExampleCommandLine
         }
 
         [TypedCommand]
-        public string roll(int sides)
+        public string roll(int sides, int count=1)
         {
             var rand = new Random(Environment.TickCount);
-            return rand.Next(1, sides + 1).ToString();
+            return string.Join(", ", Enumerable.Range(0, count).Select(x => rand.Next(1, sides + 1).ToString()));
         }
+
     }
 }

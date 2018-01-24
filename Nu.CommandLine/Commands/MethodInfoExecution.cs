@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Nu.CommandLine.Commands
 {
-    internal class MethodInfoExecution : BaseMethodExecution
+    public class MethodInfoExecution : BaseMethodExecution
     {
 
         public MethodInfo Method { get; set; }
@@ -21,7 +21,7 @@ namespace Nu.CommandLine.Commands
 
         public override string Execute(Dictionary<string, object> parameters)
         {
-            object[] args = ParameterNames.Select(name => parameters[name]).ToArray();
+            object[] args = AllParameterNames.Select(name => parameters[name]).ToArray();
             return Execute(args);
         }
 
@@ -34,7 +34,6 @@ namespace Nu.CommandLine.Commands
             Method = method;
             CommandObject = commandObject;
         }
-
     
     }
 }

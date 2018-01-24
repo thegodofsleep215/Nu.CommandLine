@@ -4,7 +4,6 @@ using System.Linq;
 using Nu.CommandLine.Attributes;
 using Nu.CommandLine.Commands;
 using Nu.CommandLine.Communication;
-using System.Reflection;
 
 namespace Nu.CommandLine
 {
@@ -36,15 +35,14 @@ namespace Nu.CommandLine
         {
             commandContainer = new CommandContainer();
             this.communicator = communicator ?? new InteractiveCommandLineCommunicator("cmd");
-            this.communicator.ProcessCommand += ProcessCommand;
-            this.communicator.ProcessCommandNamedArguments += ProcessCommandNamedArguments ;
+            this.communicator.ProcessCommandNamedArguments += ProcessCommand ;
             this.communicator.GetCommandsCallBack = commandContainer.GetCommands;
             RegisterObject(this);
             commandContainer.RegisterObject(communicator);
 
         }
 
-        private string ProcessCommandNamedArguments(string command, Dictionary<string, object> parameters)
+        private string ProcessCommand(string command, Dictionary<string, object> parameters)
         {
             if (commandContainer.HasCommand(command))
             {
@@ -56,20 +54,6 @@ namespace Nu.CommandLine
                 return "Invalid parameters.";
             }
             return "Bad Command.";
-        }
-
-        string ProcessCommand(string command, List<object> parameters)
-        {
-            if (commandContainer.HasCommand(command))
-            {
-                if (commandContainer.HasUsage(command, parameters.Count))
-                {
-                    string output = commandContainer.Invoke(command, parameters.ToArray(), out output) ? output : "An unknown error occured while executing the command.";
-                    return output;
-                }
-                return "Invalid number of parameters.";
-            }
-            return "Bad command.";
         }
 
 
@@ -95,7 +79,7 @@ namespace Nu.CommandLine
         }
 
         
-        #region Client Command Methods
+        #region Client Command Method
 
         [TypedCommand("help", "Displays help for all commands.")]
         private string Help()

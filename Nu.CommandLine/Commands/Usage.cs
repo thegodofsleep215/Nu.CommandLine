@@ -1,4 +1,6 @@
 using System.Linq;
+using System.Text;
+using Nu.CommandLine.Attributes;
 
 namespace Nu.CommandLine.Commands
 {
@@ -23,6 +25,11 @@ namespace Nu.CommandLine.Commands
         public int NumberOfParams;
 
         /// <summary>
+        /// Number of default parameters
+        /// </summary>
+        public int NumberOfDefaultParams;
+
+        /// <summary>
         /// Method to execute.
         /// </summary>
         public IMethodExecution Method { get; set; }
@@ -34,8 +41,15 @@ namespace Nu.CommandLine.Commands
 
         public virtual bool MatchesUsage(string[] parameterNames)
         {
-            if (parameterNames.Length != Method.ParameterNames.Length) return false;
-            return Method.ParameterNames.All(parameterNames.Contains);
+            if (parameterNames.Length < Method.RequiredParameterNames.Length || 
+                parameterNames.Length > Method.AllParameterNames.Length) return false;
+
+            var req =  Method.RequiredParameterNames.All(parameterNames.Contains);
+
+            var optional = parameterNames.Length == Method.RequiredParameterNames.Length || 
+                           parameterNames.Where(x => !Method.RequiredParameterNames.Contains(x)) .All(x => Method.OptionalParameterNames.Contains(x));
+
+            return req &&  optional;
         }
 
         /// <summary>
@@ -51,6 +65,24 @@ namespace Nu.CommandLine.Commands
             Desc = desc;
             NumberOfParams = nop;
             Method = method;
+        }
+
+        public Usage(IMethodExecution methodExecution, TypedCommandAttribute commandAttribute = null)
+        {
+            var sb = new StringBuilder();
+            var name = commandAttribute == null ? methodExecution.DefaultMethodName :
+                                                    string.IsNullOrEmpty(commandAttribute.Command) ? methodExecution.DefaultMethodName : commandAttribute.Command;
+            sb.Append($"{name} ");
+            sb.Append(string.Join(" ", methodExecution.RequiredParameterNames));
+            sb.Append(string.Join(" ", $"[{methodExecution.OptionalParameterNames}]"));
+
+            string u = sb.ToString().TrimEnd(',', ' ');
+
+            Use = u;
+            Desc = "";
+            NumberOfParams = methodExecution.AllParameterNames.Length;
+            NumberOfDefaultParams = methodExecution.OptionalParameterNames.Length;
+            Method = methodExecution;
         }
     }
 }

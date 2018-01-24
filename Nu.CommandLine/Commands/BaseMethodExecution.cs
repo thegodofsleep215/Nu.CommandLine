@@ -5,145 +5,94 @@ using System.Reflection;
 
 namespace Nu.CommandLine.Commands
 {
-    abstract class BaseMethodExecution : IMethodExecution
+    public abstract class BaseMethodExecution : IMethodExecution
     {
         protected MethodInfo method;
 
-        protected BaseMethodExecution(MethodInfo mi)
+        protected BaseMethodExecution(MethodInfo method)
         {
-            method = mi;
-            ParameterNames = mi.GetParameters().Select(x => x.Name).ToArray();
+            DefaultMethodName = method.Name;
+            this.method = method;
+
+            var parameters = method.GetParameters();
+            AllParameterNames = parameters.Select(x => x.Name).ToArray();
+            RequiredParameterNames = parameters.Where(x => !x.IsOptional).Select(x => x.Name).ToArray();
+            OptionalParameterNames = parameters.Where(x => x.IsOptional).Select(x => x.Name).ToArray();
         }
+
+        public string DefaultMethodName { get; }
 
         public abstract string Execute(object[] args);
 
-        public string[] ParameterNames { get; }
+        public string[] AllParameterNames { get; }
+
+        public string[] RequiredParameterNames { get; }
+
+        public string[] OptionalParameterNames { get; }
 
         public abstract string Execute(Dictionary<string, object> parameters);
 
-        public bool CanExecute(Dictionary<string, object> parameters, out object[] finalParams, out string error)
-        {
-            object[] args = ParameterNames.Select(name => parameters[name]).ToArray();
-            return CanExecute(args, out finalParams, out error);
-        }
 
-        public bool CanExecute(object[] args, out object[] finalParams, out string error)
+        public bool CanExecute(Dictionary<string, object> parameters, out object[] castedParams, out string error)
         {
             error = "";
-            object[] p = args;
             var mParams = method.GetParameters();
-            finalParams = new object[mParams.Count()];
-            var optionalMap = new Dictionary<string, string>();
-            int i = 0;
-            for (; i < p.Count(); i++)
+            castedParams = new object[mParams.Count()];
+
+            bool result = true;
+            for (int i = 0; i < mParams.Count() && result; i++)
             {
                 ParameterInfo pInfo = mParams[i];
+                if (pInfo.IsOptional)
+                {
+                    if (parameters.ContainsKey(pInfo.Name))
+                    {
+                        result = AddValue(pInfo, castedParams, i, ref error);
+                    }
+                    else
+                    {
+                        castedParams[i] = pInfo.DefaultValue;
+                    }
+                }
+                else
+                {
+                    result = AddValue(pInfo, castedParams, i, ref error);
+                }
+            }
+
+            return result;
+
+            bool AddValue(ParameterInfo pInfo, object[] final, int i, ref string paramError)
+            {
+                var value = parameters[pInfo.Name];
                 try
                 {
                     if (pInfo.ParameterType.BaseType != null && pInfo.ParameterType.BaseType.Name == "Enum")
                     {
                         // Do not parse Enums if they were passed as ints.
-                        int garbage;
-                        if (int.TryParse((string)p[i], out garbage))
+                        if (int.TryParse((string)value, out _))
                         {
-                            error = "Type Error: Cannot convert an interger type to an Enum, please use the string version of the enum.";
+                            paramError = "Type Error: Cannot convert an interger type to an Enum, please use the string version of the enum.";
                             return false;
                         }
-                        finalParams[i] = Enum.Parse(pInfo.ParameterType, (string)p[i], true);
+                        final[i] = Enum.Parse(pInfo.ParameterType, (string)value, true);
                     }
-                    else if (pInfo.ParameterType.BaseType != null && pInfo.ParameterType.BaseType.IsArray)
+                    else if (pInfo.ParameterType.Name == value.GetType().Name + "&")
                     {
-                        throw new NotImplementedException();
-                    }
-                    else if (pInfo.ParameterType.BaseType != null && pInfo.ParameterType.BaseType.Name == "Dictionary`2")
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else if (pInfo.ParameterType.Name == p[i].GetType().Name + "&")
-                    {
-                        finalParams[i] = p[i];
+                        final[i] = value;
                     }
                     else
                     {
-                        string t = p[i].GetType().Name;
-                        if (t == "Dictionary`2")
-                        {
-                            // addcharm name [type=simple]
-                            if (i == p.Count() - 1)
-                            {
-                                optionalMap = (Dictionary<string, string>)p[i];
-                            }
-                            else
-                            {
-                                error = "Unexpected Dicionary: A dictionary for optional parameters must be the last parameter passed.";
-                            }
-                        }
-                        else
-                        {
-                            finalParams[i] = Convert.ChangeType(p[i], pInfo.ParameterType);
-                        }
+                        final[i] = Convert.ChangeType(value, pInfo.ParameterType);
                     }
                 }
                 catch
                 {
-                    error = $"Type Error: Cannot convert '{p[i]}' to a(n) '{pInfo.ParameterType.Name}'";
+                    paramError = $"Type Error: Cannot convert '{value}' to a(n) '{pInfo.ParameterType.Name}'";
                     return false;
                 }
+                return true;
             }
-            if (optionalMap.Count > 0)
-            {
-                i--;
-            }
-
-            // Fill in the default parameters.
-            for (; i < mParams.Count(); i++)
-            {
-                ParameterInfo pInfo = mParams[i];
-                string okey= "";
-                foreach (string k in optionalMap.Keys)
-                {
-                    if (k.ToUpper() == pInfo.Name.ToUpper())
-                    {
-                        okey = k;
-                        break;
-                    }
-                }
-
-                if (okey.Length > 0 && pInfo.Attributes.HasFlag(ParameterAttributes.HasDefault))
-                {
-                    if (pInfo.ParameterType.BaseType != null && pInfo.ParameterType.BaseType.Name == "Enum")
-                    {
-                        // Do not parse Enums if they were passed as ints.
-                        int garbage;
-                        if (int.TryParse(optionalMap[okey], out garbage))
-                        {
-                            error = "Type Error: Cannot convert an interger type to an Enum, please use the string version of the enum.";
-                            return false;
-                        }
-                        finalParams[i] = Enum.Parse(pInfo.ParameterType, (string)p[i], true);
-                    }
-                    else
-                    {
-                        finalParams[i] = Convert.ChangeType(optionalMap[okey], pInfo.ParameterType);
-                    }
-                    optionalMap.Remove(okey);
-                }
-                else if (pInfo.Attributes.HasFlag(ParameterAttributes.HasDefault))
-                {
-                    finalParams[i] = pInfo.DefaultValue;
-                }
-                else
-                {
-                    error = $"Syntax Error: Not enought parameters, '{pInfo.Name}' did not have a default value.";
-                    return false;
-                }
-            }
-            if (optionalMap.Count > 0)
-            {
-                error = "Parameter Error: Unknown default parameters were given.";
-                return false;
-            }
-            return true;
         }
     }
 }

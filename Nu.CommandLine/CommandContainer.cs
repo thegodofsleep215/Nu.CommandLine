@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing.Text;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -27,7 +28,7 @@ namespace Nu.CommandLine
 
         #endregion
 
-        #region Static Methods
+        #region Static Method
 
         /// <summary>
         /// Adds commands functions decorated with InteractiveCommandLineCommunicator.CommandAttribute
@@ -48,7 +49,7 @@ namespace Nu.CommandLine
                     foreach (var methodAttribute in typedMethodInfos[method])
                     {
                         methodAttribute.ResolveCommandName(method);
-                        var usage = methodAttribute.GetUsage(method, GetMethodExectuion(methodAttribute.Command, method, commandObject));
+                        var usage = new Usage(GetMethodExectuion(methodAttribute.Command, method, commandObject), methodAttribute);
                         AddCommand(commandObject.GetType().FullName, methodAttribute.Command, usage);
                     }
                 }
@@ -168,12 +169,13 @@ namespace Nu.CommandLine
             return false;
         }
 
+
         public bool HasUsage(string commandName, Dictionary<string, object> parameters)
         {
             Command com;
             if (commands.TryGetValue(commandName, out com))
             {
-                return com.Usages.Where(u => u.NumberOfParams == parameters.Count).Any(u => u.MatchesUsage(parameters.Keys.ToArray()));
+                return com.Usages.Any(u => u.MatchesUsage(parameters.Keys.ToArray()));
             }
             return false;
         }
@@ -205,7 +207,7 @@ namespace Nu.CommandLine
             output = "";
             if (commands.TryGetValue(commandName, out com))
             {
-                var usage = com.Usages.Where(u => u.NumberOfParams == parameters.Count).First(u => u.MatchesUsage(parameters.Keys.ToArray()));
+                var usage = com.Usages.First(u => u.MatchesUsage(parameters.Keys.ToArray()));
 
                 object[] temp;
                 string error;
@@ -215,33 +217,7 @@ namespace Nu.CommandLine
             return false;
         }
 
-        /// <summary>
-        /// Executes commandName.
-        /// </summary>
-        /// <param name="commandName"></param>
-        /// <param name="parameters"></param>
-        /// <param name="output"></param>
-        /// <returns></returns>
-        public bool Invoke(string commandName, object[] parameters, out string output)
-        {
-            Command com;
-            output = "";
-            if (commands.TryGetValue(commandName, out com))
-            {
-                List<IMethodExecution> method = (from u in commands[commandName].Usages
-                    where u.NumberOfParams == parameters.Count() || u.NumberOfParams == -1
-                    select u.Method).Distinct().ToList();
-                if (method.Count == 1)
-                {
-                    string error;
-                    object[] args;
-                    output = method[0].CanExecute(parameters, out args, out error) ? method[0].Execute(args) : error;
-                    return true;
-                }
-            }
-            output = "Could not find a method to execute command.";
-            return false;
-        }
+
 
         /// <summary>
         /// Gets a list of all commands.
