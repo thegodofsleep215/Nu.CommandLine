@@ -28,7 +28,6 @@ namespace Nu.CommandLine
 
         #endregion
 
-        #region Static Method
 
         /// <summary>
         /// Adds commands functions decorated with InteractiveCommandLineCommunicator.CommandAttribute
@@ -50,7 +49,7 @@ namespace Nu.CommandLine
                     {
                         methodAttribute.ResolveCommandName(method);
                         var usage = new Usage(GetMethodExectuion(methodAttribute.Command, method, commandObject), methodAttribute);
-                        AddCommand(commandObject.GetType().FullName, methodAttribute.Command, usage);
+                        AddCommand(methodAttribute.Command, usage);
                     }
                 }
                 catch (Exception ex)
@@ -60,18 +59,6 @@ namespace Nu.CommandLine
             }
         }
 
-        private string GetTypedCommandUsage(MethodInfo method, string command)
-        {
-            var par = method.GetParameters();
-            var sb = new StringBuilder();
-            sb.Append(command + " ");
-            foreach (var p in par)
-            {
-                var temp = p.ParameterType.ToString().Split('.');
-                sb.Append($"<{temp[temp.Length - 1]} {p.Name}>, ");
-            }
-            return sb.ToString().TrimEnd(',', ' ');
-        }
 
         private bool CheckReturnType(MethodInfo method)
         {
@@ -83,25 +70,16 @@ namespace Nu.CommandLine
         }
 
 
-
-        public void AddCommand(string origin, string commandName, string commandUsage, int numberOfParameters, string help, MethodInfo method, Object commandObject)
-        {
-            IMethodExecution mex = GetMethodExectuion(commandName, method, commandObject);
-            var usage = new Usage(commandUsage, help, numberOfParameters, mex);
-            AddCommand(origin, commandName, usage);
-        }
-
         /// <summary>
         /// Adds a command  to commands.
         /// </summary>
-        /// <param name="origin"></param>
         /// <param name="commandName"></param>
         /// <param name="usage"></param>
-        public void AddCommand(string origin, string commandName, Usage usage)
+        public void AddCommand(string commandName, Usage usage)
         {
             if (!commands.ContainsKey(commandName))
             {
-                commands.TryAdd(commandName, new Command(origin, commandName, usage));
+                commands.TryAdd(commandName, new Command(commandName, usage));
             }
             else
             {
@@ -119,16 +97,6 @@ namespace Nu.CommandLine
             }
         }
 
-        /// <summary>
-        /// Adds a command  to commands.
-        /// </summary>
-        /// <param name="origin"></param>
-        /// <param name="commandName"></param>
-        /// <param name="usage"></param>
-        public void AddCommand(string origin, string commandName, Usage[] usage)
-        {
-            commands[commandName] = new Command(origin, commandName, usage);
-        }
 
         /// <summary>
         /// Removes a command  to commands.
@@ -148,25 +116,6 @@ namespace Nu.CommandLine
         public bool HasCommand(string commandName)
         {
             return commands.ContainsKey(commandName);
-        }
-
-        /// <summary>
-        /// Checks to see if a usage with numberOfParameters exists in commandName for commands.
-        /// </summary>
-        /// <param name="commandName"></param>
-        /// <param name="numberOfParameters"></param>
-        /// <returns></returns>
-        public bool HasUsage(string commandName, int numberOfParameters, params object[] args)
-        {
-            Command com;
-            if (commands.TryGetValue(commandName, out com))
-            {
-                return (from u in com.Usages
-                    where (u.NumberOfParams == numberOfParameters || u.NumberOfParams < 0) && u.MatchesUsage(args)
-                    select u).Any();
-
-            }
-            return false;
         }
 
 
@@ -228,11 +177,6 @@ namespace Nu.CommandLine
             return commands.Keys.ToList();
         }
 
-        public List<string> GetCommands(string origin)
-        {
-            return commands.Where(kvp => kvp.Value.Origin == origin).Select(kvp => kvp.Key).ToList();
-        }
-
         /// <summary>
         /// Gets a specific command.
         /// </summary>
@@ -245,6 +189,5 @@ namespace Nu.CommandLine
             return result;
         }
 
-        #endregion
     }
 }

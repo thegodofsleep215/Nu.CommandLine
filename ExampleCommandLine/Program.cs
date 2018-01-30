@@ -19,7 +19,7 @@ namespace ExampleCommandLine
         {
             var parsedArgs = ConsoleArguments.Parse(args);
             var console = new ConsoleCommunicator();
-            var cp = CommandProcessor.GenerateCommandProcessor(console);
+            var cp = CommandProcessor.GenerateCommandProcessor(console, "help text");
             //var cp = new CommandProcessor(console);
             //cp.RegisterObject(new ExampleCommands());
             cp.Start();

@@ -34,6 +34,5 @@ namespace Nu.CommandLine.Commands
             Method = method;
             CommandObject = commandObject;
         }
-    
     }
 }
