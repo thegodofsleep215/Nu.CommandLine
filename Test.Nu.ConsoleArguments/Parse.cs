@@ -1,12 +1,12 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Should;
 using Nu.ConsoleArguments;
 
-namespace Test.NuConoleArguments
+namespace Test.Nu.ConsoleArgumentsTest
 {
     [TestClass]
-    public class Parse
+    public class ParseMethod
     {
         [TestMethod]
         public void EmptyArgs()
@@ -132,7 +132,85 @@ namespace Test.NuConoleArguments
             Assert.AreEqual("foo", actual.NamedArguments.ElementAt(0).Key);
             Assert.AreEqual("bar foo", actual.NamedArguments.ElementAt(0).Value);
             Assert.AreEqual(0, actual.UnnamedArguments.Length);
-        }   
+        }
+
+        [TestMethod]
+        public void OneFlag()
+        {
+            var denote = '-';
+            var delimiter = ' ';
+            var args = new[] { "-flag" };
+            var actual = ConsoleArguments.Parse(args, denote, delimiter);
+            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.ShouldContain("flag");
+        }
+
+        [TestMethod]
+        public void OneFlagBeforeNamedArgument()
+        {
+            var denote = '-';
+            var delimiter = ' ';
+            var args = new[] { "-flag", "-foo", "\"bar foo\"" };
+            var actual = ConsoleArguments.Parse(args, denote, delimiter);
+            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.ShouldContain("flag");
+            actual.NamedArguments.ContainsKey("foo").ShouldBeTrue();
+            actual.NamedArguments["foo"].ShouldEqual("bar foo");
+        }
+
+        [TestMethod]
+        public void OneFlagBeforeNamedArgumentEqualDelimiter()
+        {
+            var denote = '-';
+            var delimiter = '=';
+            var args = new[] { "-flag", "-foo=\"bar foo\"" };
+            var actual = ConsoleArguments.Parse(args, denote, delimiter);
+            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.ShouldContain("flag");
+            actual.NamedArguments.ContainsKey("foo").ShouldBeTrue();
+            actual.NamedArguments["foo"].ShouldEqual("bar foo");
+        }
+
+        [TestMethod]
+        public void OneFlagAfterNamedArgument()
+        {
+            var denote = '-';
+            var delimiter = ' ';
+            var args = new[] { "-foo", "\"bar foo\"", "-flag" };
+            var actual = ConsoleArguments.Parse(args, denote, delimiter);
+            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.ShouldContain("flag");
+            actual.NamedArguments.ContainsKey("foo").ShouldBeTrue();
+            actual.NamedArguments["foo"].ShouldEqual("bar foo");
+        }
+
+        [TestMethod]
+        public void OneFlagAfterUnnamedArgument()
+        {
+            var denote = '-';
+            var delimiter = ' ';
+            var args = new[] { "foo", "-flag" };
+            var actual = ConsoleArguments.Parse(args, denote, delimiter);
+            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.ShouldContain("flag");
+            actual.UnnamedArguments.Length.ShouldEqual(1);
+            actual.UnnamedArguments.ShouldContain("foo");
+        }
+
+        [TestMethod]
+        public void OneFlagAfterBeforeNamedArgumentEqualIsDelimiter()
+        {
+            var denote = '-';
+            var delimiter = '=';
+            var args = new[] { "-flag", "foo" };
+            var actual = ConsoleArguments.Parse(args, denote, delimiter);
+            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.ShouldContain("flag");
+            actual.UnnamedArguments.Length.ShouldEqual(1);
+            actual.UnnamedArguments.ShouldContain("foo");
+        }
+
+
 
 
     }

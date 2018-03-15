@@ -17,7 +17,7 @@ namespace ExampleCommandLine
 
         private static void StartConsole(string[] args)
         {
-            var parsedArgs = ConsoleArguments.Parse(args);
+            var parsedArgs = ConsoleArguments.Parse(args, namedDelimiter:'=');
             var console = new ConsoleCommunicator();
             var cp = CommandProcessor.GenerateCommandProcessor(console, "help text");
             //var cp = new CommandProcessor(console);

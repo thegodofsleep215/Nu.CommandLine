@@ -9,30 +9,43 @@ namespace Nu.ConsoleArguments
 
         public Dictionary<string, string> NamedArguments { get; protected set; }
 
+        public List<string> Flags { get; set; }
+
         public ConsoleArguments()
         {
             UnnamedArguments = new string[0];
             NamedArguments = new Dictionary<string, string>();
+            Flags = new List<string>();
         }
+
 
         public static ConsoleArguments Parse(string[] args, char nameDenoter = '-', char namedDelimiter = ' ')
         {
             var parsedArgs = new ConsoleArguments();
             List<string> unnamed = new List<string>();
-            var nameRegex = new Regex(@"^.(?<name>\w+)$"); // not putting nameDenoter in the regex so I don't have to worry about escaping it.
-            var nameWithValRegex = new Regex($"^.(?<name>\\w+){namedDelimiter}(?<value>\\w*)$");
+            var nameRegex = new Regex($"^{Regex.Escape(nameDenoter.ToString())}(?<name>\\w+)$"); 
+            var nameWithValRegex = new Regex($"^{Regex.Escape(nameDenoter.ToString())}(?<name>\\w+){namedDelimiter}(?<value>.+)$");
             for (int i = 0; i < args.Length; i++)
             {
                 var arg = args[i];
                 Match match;
-                if ((match = nameRegex.Match(arg)).Success && arg.StartsWith(nameDenoter.ToString()))
+                if ((match = nameRegex.Match(arg)).Success)
                 {
-                    var name = match.Groups["name"].Value;
-                    var value = CleanValue(args[i + 1]); 
-                    parsedArgs.NamedArguments[name] = value;
-                    i++;
+                    if (namedDelimiter == ' ' && i < args.Length - 1 && !nameRegex.IsMatch(args[i + 1]))
+                    {
+                        var name = match.Groups["name"].Value;
+                        var value = CleanValue(args[i + 1]);
+                        parsedArgs.NamedArguments[name] = value;
+                        i++;
+                    }
+                    else
+                    {
+                        var flag = match.Groups["name"].Value;
+                        parsedArgs.Flags.Add(flag);
+                    }
+
                 }
-                else if((match = nameWithValRegex.Match(arg)).Success && arg.StartsWith(nameDenoter.ToString()))
+                else if((match = nameWithValRegex.Match(arg)).Success)
                 {
                     var name = match.Groups["name"].Value;
                     var value = CleanValue(match.Groups["value"].Value);
@@ -45,6 +58,7 @@ namespace Nu.ConsoleArguments
             }
             parsedArgs.UnnamedArguments = unnamed.ToArray();
             return parsedArgs;
+
         }
 
         private static string CleanValue(string value)
