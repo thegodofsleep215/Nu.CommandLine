@@ -11,8 +11,8 @@ namespace ExampleCommandLine
     {
         static void Main(string[] args)
         {
-            //StartInteractive();
-            StartConsole(args);
+            StartInteractive();
+            //StartConsole(args);
         }
 
         private static void StartConsole(string[] args)

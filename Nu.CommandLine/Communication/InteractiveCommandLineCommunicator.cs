@@ -21,7 +21,7 @@ namespace Nu.CommandLine.Communication
 
         // Console thread where commands are entered and executed.
         private Thread consoleThread;
-        
+
         // History of commands entered.
         private readonly List<string> commandHistory = new List<string>();
 
@@ -35,16 +35,7 @@ namespace Nu.CommandLine.Communication
         readonly int promptLength;
 
 
-        // Matches a user entered command with parameters from the prompt. Items are white space delimited,
-        // and quoted strings count as one parameter. It also matches incomplete quoted strings as oen parameter.
-        readonly Regex userEntryParamsRegex = new Regex(@"^(?<command>\S+)\s+((?<params>(""[^""]*"")|([^\s""\[][^\s\[]*)|(""[^""]*$)|(\[[^\]]*\])|(\[[^\]]*$))\s*)+$");
-
-        readonly Regex arrayValuesRegex = new Regex(@"^\[((?<item>(""[^""]*"")|([^\s""=,][^\s=,]*)|(""[^""]*$))((\s*)|(\s*,\s*)))*\]");
-
-        readonly Regex keyValuePairRegex = new Regex(@"\[((?<pair>[^\s""=]+\s*=\s*((""[^""]*"")|([^\s"",][^\s*,\]]*)|(""[^""]*$)))((\s*)|(\s*,\s*)))+\]");
-
-        // Matches a command with no parameters.
-        readonly Regex userEntry = new Regex(@"^(?<command>\S+)$");
+        readonly Regex keyValuePairRegex = new Regex(@"^(?<command>\S+)\s*((?<pair>-[^\s""=]+\s*=\s*((""[^""] * "")|([^\s"",][^\s*,\]]*)))((\s*)))*$");
 
         /// <summary>
         /// Breaks up a line into items a ctrl+backspace cares about.
@@ -91,40 +82,16 @@ namespace Nu.CommandLine.Communication
         {
             Match match;
             string command;
-            var parameters = new List<object>();
-            if ((match = userEntryParamsRegex.Match(fullCommand)).Success)
+            var parameters = new Dictionary<string, object>();
+            if ((match = keyValuePairRegex.Match(fullCommand)).Success)
             {
                 command = match.Groups["command"].Value;
-
-                foreach (Capture cap in match.Groups["params"].Captures)
+                var pairs = new Dictionary<string, string>();
+                foreach (Capture capture in match.Groups["pair"].Captures)
                 {
-                    string c = cap.Value.Trim('"');
-                    Match a;
-                    if ((a = arrayValuesRegex.Match(c)).Success)
-                    {
-                        var array = (from Capture capture in a.Groups["item"].Captures select capture.Value.Trim('"')).ToList();
-                        parameters.Add(array);
-                    }
-                    else if ((a = keyValuePairRegex.Match(c)).Success)
-                    {
-                        var pairs = new Dictionary<string, string>();
-                        foreach (Capture capture in a.Groups["pair"].Captures)
-                        {
-                            string[] parts = Regex.Split(capture.Value, @"\s*=\s*");
-                            pairs[parts[0]] = parts[1].Trim('"');
-                        }
-                        parameters.Add(pairs);
-                    }
-                    else
-                    {
-                        parameters.Add(cap.Value.Trim('"'));
-                    }
+                    string[] parts = Regex.Split(capture.Value.TrimStart('-'), @"\s*=\s*");
+                    parameters[parts[0]] = parts[1].Trim('"');
                 }
-                
-            }
-            else if ((match = userEntry.Match(fullCommand)).Success)
-            {
-                command = match.Groups["command"].Value;
             }
             else
             {
@@ -133,10 +100,10 @@ namespace Nu.CommandLine.Communication
             }
 
 
-            WriteToConsole(OnProcessCommand(command, parameters));
-            
+            WriteToConsole(OnProcessCommandNamedArguments(command, parameters));
+
         }
-        
+
         /// <summary>
         /// Worker that listens to the console and exectues commands.
         /// </summary>
@@ -157,7 +124,7 @@ namespace Nu.CommandLine.Communication
                 }
             }
         }
-        
+
         /// <summary>
         /// Intercepts a key strokes until they enter key is hit.
         /// </summary>
@@ -223,7 +190,7 @@ namespace Nu.CommandLine.Communication
                         if ((m = ctrlBckspc.Match(text)).Success)
                         {
                             text = "";
-                            for(int i = 0; i < m.Groups["parts"].Captures.Count - 1; i++)//foreach (Capture c in m.Groups["parts"].Captures)
+                            for (int i = 0; i < m.Groups["parts"].Captures.Count - 1; i++)//foreach (Capture c in m.Groups["parts"].Captures)
                             {
                                 text += m.Groups["parts"].Captures[i];
                             }
@@ -292,11 +259,11 @@ namespace Nu.CommandLine.Communication
         /// <returns></returns>
         private string Tab(string text)
         {
-            Match m = userEntryParamsRegex.Match(text);
+            Match m = keyValuePairRegex.Match(text);
             var temp = new List<string> { m.Groups["command"].Value };
-            temp.AddRange(from Capture cap in m.Groups["params"].Captures select cap.Value.Trim('"'));
+            var pairs = (from Capture cap in m.Groups["pair"].Captures select cap.Value).Select()
             string[] s = temp.ToArray();
-            
+
             string result = "";
 
             if (!text.Contains(" "))

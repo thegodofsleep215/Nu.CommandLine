@@ -263,3 +263,4 @@ __pycache__/
 /Package.Nu.CommandLine/lib
 /Package.Nu.ConsoleArguments/lib/Nu.CommandLine.dll
 *.bak
+/Package.Nu.ConsoleArguments/lib/Nu.ConsoleArguments.dll
