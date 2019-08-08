@@ -35,7 +35,16 @@ namespace Nu.CommandLine.Communication
         readonly int promptLength;
 
 
-        readonly Regex keyValuePairRegex = new Regex(@"^(?<command>\S+)\s*((?<pair>-[^\s""=]+\s*=\s*((""[^""] * "")|([^\s"",][^\s*,\]]*)))((\s*)))*$");
+        // Matches a user entered command with parameters from the prompt. Items are white space delimited,
+        // and quoted strings count as one parameter. It also matches incomplete quoted strings as oen parameter.
+        readonly Regex userEntryParamsRegex = new Regex(@"^(?<command>\S+)\s+((?<params>(""[^""]*"")|([^\s""\[][^\s\[]*)|(""[^""]*$)|(\[[^\]]*\])|(\[[^\]]*$))\s*)+$");
+
+        readonly Regex arrayValuesRegex = new Regex(@"^\[((?<item>(""[^""]*"")|([^\s""=,][^\s=,]*)|(""[^""]*$))((\s*)|(\s*,\s*)))*\]");
+
+        readonly Regex keyValuePairRegex = new Regex(@"\[((?<pair>[^\s""=]+\s*=\s*((""[^""]*"")|([^\s"",][^\s*,\]]*)|(""[^""]*$)))((\s*)|(\s*,\s*)))+\]");
+
+        // Matches a command with no parameters.
+        readonly Regex userEntry = new Regex(@"^(?<command>\S+)$");
 
         /// <summary>
         /// Breaks up a line into items a ctrl+backspace cares about.
@@ -82,16 +91,40 @@ namespace Nu.CommandLine.Communication
         {
             Match match;
             string command;
-            var parameters = new Dictionary<string, object>();
-            if ((match = keyValuePairRegex.Match(fullCommand)).Success)
+            var parameters = new List<object>();
+            if ((match = userEntryParamsRegex.Match(fullCommand)).Success)
             {
                 command = match.Groups["command"].Value;
-                var pairs = new Dictionary<string, string>();
-                foreach (Capture capture in match.Groups["pair"].Captures)
+
+                foreach (Capture cap in match.Groups["params"].Captures)
                 {
-                    string[] parts = Regex.Split(capture.Value.TrimStart('-'), @"\s*=\s*");
-                    parameters[parts[0]] = parts[1].Trim('"');
+                    string c = cap.Value.Trim('"');
+                    Match a;
+                    if ((a = arrayValuesRegex.Match(c)).Success)
+                    {
+                        var array = (from Capture capture in a.Groups["item"].Captures select capture.Value.Trim('"')).ToList();
+                        parameters.Add(array);
+                    }
+                    else if ((a = keyValuePairRegex.Match(c)).Success)
+                    {
+                        var pairs = new Dictionary<string, string>();
+                        foreach (Capture capture in a.Groups["pair"].Captures)
+                        {
+                            string[] parts = Regex.Split(capture.Value, @"\s*=\s*");
+                            pairs[parts[0]] = parts[1].Trim('"');
+                        }
+                        parameters.Add(pairs);
+                    }
+                    else
+                    {
+                        parameters.Add(cap.Value.Trim('"'));
+                    }
                 }
+
+            }
+            else if ((match = userEntry.Match(fullCommand)).Success)
+            {
+                command = match.Groups["command"].Value;
             }
             else
             {
@@ -100,7 +133,7 @@ namespace Nu.CommandLine.Communication
             }
 
 
-            WriteToConsole(OnProcessCommandNamedArguments(command, parameters));
+            WriteToConsole(OnProcessCommand(command, parameters));
 
         }
 
@@ -259,9 +292,9 @@ namespace Nu.CommandLine.Communication
         /// <returns></returns>
         private string Tab(string text)
         {
-            Match m = keyValuePairRegex.Match(text);
+            Match m = userEntryParamsRegex.Match(text);
             var temp = new List<string> { m.Groups["command"].Value };
-            var pairs = (from Capture cap in m.Groups["pair"].Captures select cap.Value).Select()
+            temp.AddRange(from Capture cap in m.Groups["params"].Captures select cap.Value.Trim('"'));
             string[] s = temp.ToArray();
 
             string result = "";

@@ -70,6 +70,7 @@ namespace Nu.CommandLine
         }
 
 
+
         /// <summary>
         /// Adds a command  to commands.
         /// </summary>
@@ -84,8 +85,8 @@ namespace Nu.CommandLine
             else
             {
                 var matchingUsages = (from u in commands[commandName].Usages
-                    where u.NumberOfParams == usage.NumberOfParams
-                    select u);
+                                      where u.NumberOfParams == usage.NumberOfParams
+                                      select u);
                 if (!matchingUsages.Any())
                 {
                     commands[commandName].Usages.Add(usage);
@@ -121,10 +122,18 @@ namespace Nu.CommandLine
 
         public bool HasUsage(string commandName, Dictionary<string, object> parameters)
         {
-            Command com;
-            if (commands.TryGetValue(commandName, out com))
+            if (commands.TryGetValue(commandName, out Command com))
             {
                 return com.Usages.Any(u => u.MatchesUsage(parameters.Keys.ToArray()));
+            }
+            return false;
+        }
+
+        internal bool HasUsageOrderedParameters(string commandName, List<object> parameters)
+        {
+            if (commands.TryGetValue(commandName, out Command com))
+            {
+                return com.Usages.Any(u => u.MatchesUsageOrderedParameters(parameters.ToArray()));
             }
             return false;
         }
@@ -162,6 +171,25 @@ namespace Nu.CommandLine
                 string error;
                 output = usage.Method.CanExecute(parameters, out temp, out error) ? usage.Method.Execute(temp) : error;
                 return true;
+            }
+            return false;
+        }
+
+        public bool Invoke(string commandName, List<object> parameters, out string output)
+        {
+            output = "Bad command.";
+            if (commands.TryGetValue(commandName, out Command com))
+            {
+                var usages = com.Usages.Where(u => u.MatchesUsageOrderedParameters(parameters.ToArray()));
+                foreach (var usage in usages)
+                {
+                    if (usage.Method.CanExecute(parameters, out object[] castedParameters, out string error))
+                    {
+                        output = usage.Method.Execute(castedParameters);
+                        return true;
+                    }
+                    output = error;
+                }
             }
             return false;
         }

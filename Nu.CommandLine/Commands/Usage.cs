@@ -34,11 +34,6 @@ namespace Nu.CommandLine.Commands
         /// </summary>
         public IMethodExecution Method { get; set; }
 
-        public virtual bool MatchesUsage(params object[] args)
-        {
-            return true;
-        }
-
         public virtual bool MatchesUsage(string[] parameterNames)
         {
             if (parameterNames.Length < Method.RequiredParameterNames.Length || 
@@ -50,6 +45,12 @@ namespace Nu.CommandLine.Commands
                            parameterNames.Where(x => !Method.RequiredParameterNames.Contains(x)) .All(x => Method.OptionalParameterNames.Contains(x));
 
             return req &&  optional;
+        }
+
+        public virtual bool MatchesUsageOrderedParameters(object[] parameters)
+        {
+            return !(parameters.Length < Method.RequiredParameterNames.Length ||
+                parameters.Length > Method.AllParameterNames.Length);
         }
 
         /// <summary>

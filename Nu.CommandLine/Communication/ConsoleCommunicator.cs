@@ -24,5 +24,15 @@ namespace Nu.CommandLine.Communication
             if (handler != null) return handler(command, dict);
             return "Process Command Named arguments is not wired up.";
         }
+
+        public string SendCommandOrderedParameters(string command, List<object> parameters)
+        {
+            if(ProcessCommand != null)
+            {
+                return ProcessCommand(command, parameters);
+            }
+            return "Process command ordered parameters is not wired up.";
+        }
+
     }
 }

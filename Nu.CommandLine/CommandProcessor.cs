@@ -17,8 +17,7 @@ namespace Nu.CommandLine
 
         private readonly string manual;
 
-        public static CommandProcessor GenerateCommandProcessor(ICommandCommunicator communicator = null, string manual = null)
-        {
+        public static CommandProcessor GenerateCommandProcessor(ICommandCommunicator communicator, string manual = null) {
             var cp = new CommandProcessor(communicator, manual);
             var t = typeof(IActionContainer);
             var actionContainers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes()).Where(x => t.IsAssignableFrom(x)).Where(x => x.IsClass).ToList();
@@ -34,12 +33,13 @@ namespace Nu.CommandLine
             return cp;
         }
 
-        public CommandProcessor(ICommandCommunicator communicator = null, string manual = null)
+        public CommandProcessor(ICommandCommunicator communicator, string manual = null)
         {
             this.manual = manual;
             commandContainer = new CommandContainer();
             this.communicator = communicator ?? new InteractiveCommandLineCommunicator("cmd");
-            this.communicator.ProcessCommandNamedArguments += ProcessCommand;
+            this.communicator.ProcessCommandNamedArguments += ProcessCommandNamedParameters;
+            this.communicator.ProcessCommand += ProcessCommandOrderedParameters;
             this.communicator.GetCommandsCallBack = commandContainer.GetCommands;
             RegisterObject(this);
             if (!string.IsNullOrEmpty(manual))
@@ -49,7 +49,20 @@ namespace Nu.CommandLine
             commandContainer.RegisterObject(communicator);
         }
 
-        private string ProcessCommand(string command, Dictionary<string, object> parameters)
+        private string ProcessCommandOrderedParameters(string command, List<object> parameters)
+        {
+            if (commandContainer.HasCommand(command))
+            {
+                if (commandContainer.HasUsageOrderedParameters(command, parameters))
+                {
+                    return commandContainer.Invoke(command, parameters, out string output) ? output : "An unkown error occurrerd while executing the commnad.";
+                }
+                return string.IsNullOrEmpty(manual) ? "Invalid Parameters." : manual;
+            }
+            return string.IsNullOrEmpty(manual) ? "Bad command." : manual;
+        }
+
+        private string ProcessCommandNamedParameters(string command, Dictionary<string, object> parameters)
         {
             if (commandContainer.HasCommand(command))
             {
@@ -62,6 +75,7 @@ namespace Nu.CommandLine
             }
             return string.IsNullOrEmpty(manual) ? "Bad Command." : manual;
         }
+
 
         public void Start()
         {

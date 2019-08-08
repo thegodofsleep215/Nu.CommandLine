@@ -20,5 +20,7 @@ namespace Nu.CommandLine.Commands
         string Execute(Dictionary<string, object> parameters);
 
         bool CanExecute(Dictionary<string, object> parameters, out object[] castedParams, out string error);
+
+        bool CanExecute(List<object> parameters, out object[] castedParameters, out string error);
     }
 }

@@ -38,5 +38,12 @@ namespace Nu.CommandLine.Commands
             error = "";
             return true;
         }
+
+        public bool CanExecute(List<object> parameters, out object[] castedParameters, out string error)
+        {
+            castedParameters = new string[] { };
+            error = "";
+            return true;
+        }
     }
 }

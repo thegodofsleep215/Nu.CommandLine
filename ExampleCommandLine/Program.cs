@@ -42,6 +42,12 @@ namespace ExampleCommandLine
             return msg;
         }
 
+        [TypedCommand("echo", "returns what is passed.")]
+        public string Echo(int a, int b)
+        {
+            return (a + b).ToString();
+        }
+
         [TypedCommand]
         public string roll(int sides, int count=1)
         {
