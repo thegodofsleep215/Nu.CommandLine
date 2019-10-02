@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Nu.CommandLine;
 using Nu.CommandLine.Attributes;
 using Nu.CommandLine.Communication;
@@ -11,7 +13,8 @@ namespace ExampleCommandLine
     {
         static void Main(string[] args)
         {
-            StartInteractive();
+            StartSplitWindow();
+            //StartInteractive();
             //StartConsole(args);
         }
 
@@ -27,11 +30,29 @@ namespace ExampleCommandLine
 
         }
 
+        static bool running = true;
+
+        private static void StartSplitWindow()
+        {
+            var comm = new SplitWindowInteractiveCommunicator("ic");
+            comm.ShuttingDown += () => running = false;
+            var cp = CommandProcessor.GenerateCommandProcessor(comm);
+            cp.Start();
+            Task.Run(() =>
+            {
+                while (running)
+                {
+                    comm.LogMessage("Ping");
+                    Thread.Sleep(100);
+                }
+            });
+        }
         private static void StartInteractive()
         {
             var cp = CommandProcessor.GenerateCommandProcessor(new InteractiveCommandLineCommunicator("ic"));
             cp.Start();
         }
+
     }
 
     class ExampleCommands : IActionContainer

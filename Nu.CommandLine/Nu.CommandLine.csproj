@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\DelegateExecutionMethod.cs" />
+    <Compile Include="Communication\SplitWindowInteractiveCommunicator.cs" />
     <Compile Include="Exceptions\CommandLineException.cs" />
     <Compile Include="CommandProcessor.cs" />
     <Compile Include="Commands\BaseMethodExecution.cs" />

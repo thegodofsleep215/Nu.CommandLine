@@ -9,10 +9,8 @@ using Nu.CommandLine.Attributes;
 
 namespace Nu.CommandLine.Communication
 {
-    /// <summary>
-    /// Implements a skeleton command line interface.
-    /// </summary>
-    public class InteractiveCommandLineCommunicator : ICommandCommunicator
+
+    public class SplitWindowInteractiveCommunicator : ICommandCommunicator
     {
         #region Fields
 
@@ -21,6 +19,7 @@ namespace Nu.CommandLine.Communication
 
         // Console thread where commands are entered and executed.
         private Thread consoleThread;
+        private Thread sizeThread;
 
         // History of commands entered.
         private readonly List<string> commandHistory = new List<string>();
@@ -33,6 +32,14 @@ namespace Nu.CommandLine.Communication
 
         // Length of the prompt
         readonly int promptLength;
+
+        List<string> output = new List<string>();
+
+        private System.Drawing.Size consoleSize;
+        private object consoleLock = new object();
+        private string inputText;
+
+
 
 
         // Matches a user entered command with parameters from the prompt. Items are white space delimited,
@@ -52,12 +59,14 @@ namespace Nu.CommandLine.Communication
         readonly Regex ctrlBckspc = new Regex(@"^(?<parts>(\.)|(\\)|(\s+)|([^\s\.\\]+))*");
         #endregion
 
+        public event Action ShuttingDown;
+
         /// <summary>
         /// Construcotr that adds default commands.
         /// </summary>
         /// <param name="commInterface"></param>
         /// <param name="pName"></param>
-        public InteractiveCommandLineCommunicator(string pName)
+        public SplitWindowInteractiveCommunicator(string pName)
         {
             promptName = pName;
             promptLength = promptName.Length + 2; //2 == '> '
@@ -70,9 +79,72 @@ namespace Nu.CommandLine.Communication
         public void Start()
         {
             running = true;
+            consoleSize = new System.Drawing.Size { Height = Console.WindowHeight, Width = Console.WindowWidth };
+            Console.SetBufferSize(consoleSize.Width, consoleSize.Height);
+
+            sizeThread = new Thread(SizeManager);
+            sizeThread.Start();
 
             consoleThread = new Thread(ConsoleRead);
             consoleThread.Start();
+        }
+
+
+
+        private void SizeManager()
+        {
+            while (running)
+            {
+                var size = new System.Drawing.Size { Height = Console.WindowHeight, Width = Console.WindowWidth };
+                bool redraw = false;
+                lock (consoleLock)
+                {
+                    if (size.Width != consoleSize.Width || size.Height != consoleSize.Height)
+                    {
+                        consoleSize = size;
+                        Console.SetBufferSize(Console.WindowLeft + Console.WindowWidth, Console.WindowTop + Console.WindowHeight);
+                        redraw = true;
+                    }
+                }
+                if (redraw)
+                {
+                    DrawLayout();
+                }
+                Thread.Sleep(10);
+            }
+        }
+
+
+        private void DrawLayout()
+        {
+            Console.Clear();
+            Console.SetCursorPosition(0, 0);
+            int height;
+            int width;
+            lock (consoleLock)
+            {
+                height = consoleSize.Height;
+                width = consoleSize.Width;
+            }
+
+            var outputHeight = height - 3;
+            if (outputHeight <= 0) outputHeight = height;
+            var index = output.Count - outputHeight;
+            if (index < 0) index = 0;
+            for (; index < output.Count; index++)
+            {
+                Console.WriteLine(output[index]);
+            }
+
+            Console.SetCursorPosition(0, height - 2);
+            Console.Write(string.Join("", Enumerable.Repeat('-', width)));
+
+            Console.SetCursorPosition(0, height - 1);
+
+
+            // Draw input
+            Console.Write($"{promptName}> {inputText}");
+
         }
 
         /// <summary>
@@ -80,6 +152,7 @@ namespace Nu.CommandLine.Communication
         /// </summary>
         public void Stop()
         {
+            ShuttingDown?.Invoke();
             running = false;
         }
 
@@ -142,11 +215,14 @@ namespace Nu.CommandLine.Communication
         /// </summary>
         private void ConsoleRead()
         {
+            DrawLayout();
             while (running)
             {
                 try
                 {
                     string c = KeyIntercept();
+                    inputText = "";
+                    DrawLayout();
 
                     ExecuteCommand(c);
                 }
@@ -158,6 +234,7 @@ namespace Nu.CommandLine.Communication
             }
         }
 
+
         /// <summary>
         /// Intercepts a key strokes until they enter key is hit.
         /// </summary>
@@ -165,20 +242,13 @@ namespace Nu.CommandLine.Communication
         private string KeyIntercept()
         {
             int historyPos = -1;
-            string text = "";
-
-            if (Console.CursorLeft < promptLength)
-            {
-                Console.CursorLeft = 0;
-                Console.Write(promptName + "> ");
-            }
+            inputText = "";
 
             while (true)
             {
                 ConsoleKeyInfo key = Console.ReadKey(true);
                 if (key.Key == ConsoleKey.Enter)
                 {
-                    Console.Write(Environment.NewLine);
                     break;
                 }
                 if (key.Key == ConsoleKey.UpArrow)
@@ -188,7 +258,7 @@ namespace Nu.CommandLine.Communication
                         historyPos++;
                         ClearLine();
                         Console.Write(commandHistory[historyPos]);
-                        text = commandHistory[historyPos];
+                        inputText = commandHistory[historyPos];
                     }
                 }
                 else if (key.Key == ConsoleKey.DownArrow)
@@ -198,12 +268,12 @@ namespace Nu.CommandLine.Communication
                         historyPos--;
                         ClearLine();
                         Console.Write(commandHistory[historyPos]);
-                        text = commandHistory[historyPos];
+                        inputText = commandHistory[historyPos];
                     }
                     else
                     {
                         historyPos = -1;
-                        text = "";
+                        inputText = "";
                         ClearLine();
                     }
                 }
@@ -212,23 +282,23 @@ namespace Nu.CommandLine.Communication
                     int left = Console.CursorLeft;
                     left = left - 2 <= 2 ? 2 : left - 2;
                     Console.CursorLeft = left;
-                    if (text.Length > 0)
-                        text = text.Substring(0, text.Length - 1);
+                    if (inputText.Length > 0)
+                        inputText = inputText.Substring(0, inputText.Length - 1);
                 }
                 else if (key.Key == ConsoleKey.Backspace)
                 {
                     if ((key.Modifiers & ConsoleModifiers.Control) == ConsoleModifiers.Control)
                     {
                         Match m;
-                        if ((m = ctrlBckspc.Match(text)).Success)
+                        if ((m = ctrlBckspc.Match(inputText)).Success)
                         {
-                            text = "";
+                            inputText = "";
                             for (int i = 0; i < m.Groups["parts"].Captures.Count - 1; i++)//foreach (Capture c in m.Groups["parts"].Captures)
                             {
-                                text += m.Groups["parts"].Captures[i];
+                                inputText += m.Groups["parts"].Captures[i];
                             }
                             ClearLine();
-                            Console.Write(text);
+                            Console.Write(inputText);
                         }
                     }
                     else
@@ -239,8 +309,8 @@ namespace Nu.CommandLine.Communication
                             Console.Write(" ");
                             Console.CursorLeft -= 1;
                         }
-                        if (text.Length > 0)
-                            text = text.Substring(0, text.Length - 1);
+                        if (inputText.Length > 0)
+                            inputText = inputText.Substring(0, inputText.Length - 1);
                     }
                 }
                 else if (key.Key == ConsoleKey.RightArrow)
@@ -249,16 +319,16 @@ namespace Nu.CommandLine.Communication
                 }
                 else if (key.Key == ConsoleKey.Tab)
                 {
-                    text = Tab(text);
+                    inputText = Tab(inputText);
                 }
                 else if (key.KeyChar >= 0x20 && key.KeyChar <= 0x7E)
                 {
-                    text += key.KeyChar;
+                    inputText += key.KeyChar;
                     Console.Out.Write(key.KeyChar);
                 }
             }
-            commandHistory.Insert(0, text);
-            return text;
+            commandHistory.Insert(0, inputText);
+            return inputText;
         }
 
         /// <summary>
@@ -268,8 +338,17 @@ namespace Nu.CommandLine.Communication
         /// <param name="parmeters"></param>
         private void WriteToConsole(string input, params object[] parmeters)
         {
+            if (string.IsNullOrEmpty(input)) return;
             string foo = string.Format(input, parmeters);
-            Console.Write("\n" + foo + "\n" + promptName + "> ");
+            output.Add(foo);
+            DrawLayout();
+        }
+
+        public void LogMessage(string message)
+        {
+            if (string.IsNullOrEmpty(message)) return;
+            output.Add(message);
+            DrawLayout();
         }
 
         /// <summary>
@@ -565,6 +644,13 @@ namespace Nu.CommandLine.Communication
             }
         }
 
+        [TypedCommand("clear", "Clears the screen")]
+        public string Clear()
+        {
+            output.Clear();
+            DrawLayout();
+            return "";
+        }
         #endregion
 
         #region  ICommandCommunicator
