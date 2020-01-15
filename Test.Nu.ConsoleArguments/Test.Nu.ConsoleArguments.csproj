@@ -61,9 +61,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Nu.ConsoleArguments\Nu.ConsoleArguments.csproj">
-      <Project>{c8f6cced-00ad-4385-9a3c-15bb614f28bf}</Project>
-      <Name>Nu.ConsoleArguments</Name>
+    <ProjectReference Include="..\Nu.ConsoleArguments\Nu.ConsoleArguments.Core.csproj">
+      <Project>{35784756-3b5f-43fb-9b0f-91ab7f5c2f4e}</Project>
+      <Name>Nu.ConsoleArguments.Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

@@ -49,13 +49,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Nu.CommandLine\Nu.CommandLine.csproj">
-      <Project>{f191b981-a96e-441f-9010-978f876cf543}</Project>
-      <Name>Nu.CommandLine</Name>
+    <ProjectReference Include="..\Nu.CommandLine\Nu.CommandLine.Core.csproj">
+      <Project>{589a9842-81dc-47ff-b68f-912610a3f665}</Project>
+      <Name>Nu.CommandLine.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Nu.ConsoleArguments\Nu.ConsoleArguments.csproj">
-      <Project>{c8f6cced-00ad-4385-9a3c-15bb614f28bf}</Project>
-      <Name>Nu.ConsoleArguments</Name>
+    <ProjectReference Include="..\Nu.ConsoleArguments\Nu.ConsoleArguments.Core.csproj">
+      <Project>{35784756-3b5f-43fb-9b0f-91ab7f5c2f4e}</Project>
+      <Name>Nu.ConsoleArguments.Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
+    <Version>1.9.0</Version>
+    <Authors>Daniel Thomas</Authors>
+    <Company>Daniel Thomas</Company>
+    <Copyright>2020</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/thegodofsleep215/Nu.CommandLine</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/thegodofsleep215/Nu.CommandLine</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageId>Nu.CommandLine</PackageId>
+    <Product>Nu.CommandLine</Product>
+    <AssemblyName>Nu.CommandLine</AssemblyName>
+    <RootNamespace>Nu.CommandLine</RootNamespace>
+    <Description>Parses arguments into different categories to make it easier to consume them.</Description>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+</Project>

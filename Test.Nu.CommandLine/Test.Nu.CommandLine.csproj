@@ -60,9 +60,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Nu.CommandLine\Nu.CommandLine.csproj">
-      <Project>{F191B981-A96E-441F-9010-978F876CF543}</Project>
-      <Name>Nu.CommandLine</Name>
+    <ProjectReference Include="..\Nu.CommandLine\Nu.CommandLine.Core.csproj">
+      <Project>{589a9842-81dc-47ff-b68f-912610a3f665}</Project>
+      <Name>Nu.CommandLine.Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
