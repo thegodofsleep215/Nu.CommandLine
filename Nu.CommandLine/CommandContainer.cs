@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Drawing.Text;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using Nu.CommandLine.Attributes;
 using Nu.CommandLine.Commands;
-using Nu.CommandLine.Communication;
 using Nu.CommandLine.Utilies;
 
 namespace Nu.CommandLine

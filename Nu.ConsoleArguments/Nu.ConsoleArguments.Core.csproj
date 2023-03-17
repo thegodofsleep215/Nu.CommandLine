@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
-    <Version>1.0.1</Version>
-    <Copyright>2020</Copyright>
+    <TargetFrameworks>net7.0</TargetFrameworks>
+    <Version>1.0.2</Version>
+    <Copyright>2023</Copyright>
     <Authors>Daniel Thomas</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/thegodofsleep215/Nu.CommandLine</PackageProjectUrl>

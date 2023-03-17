@@ -1,23 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Nu.CommandLine.Attributes;
 using Nu.CommandLine.Commands;
-using Nu.CommandLine.Communication;
 
 namespace Nu.CommandLine
 {
-
     public class CommandProcessor
     {
-        private readonly ICommandCommunicator communicator;
-
         private readonly CommandContainer commandContainer;
 
         private readonly string manual;
 
-        public static CommandProcessor GenerateCommandProcessor(ICommandCommunicator communicator, string manual = null) {
-            var cp = new CommandProcessor(communicator, manual);
+        public static string Run(string command, Dictionary<string, string> arguments)
+        {
+            var cp = new CommandProcessor();
+
             var t = typeof(IActionContainer);
             var actionContainers = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes()).Where(x => t.IsAssignableFrom(x)).Where(x => x.IsClass).ToList();
             var badContainers = actionContainers.Where(ac => ac.GetConstructor(new Type[] { }) == null).ToList();
@@ -29,23 +26,21 @@ namespace Nu.CommandLine
 
             actionContainers.ForEach(x => cp.RegisterObject(Activator.CreateInstance(x.UnderlyingSystemType)));
 
-            return cp;
+
+            var dict = arguments.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value);
+            return cp.ProcessCommandNamedParameters(command, dict);
         }
 
-        public CommandProcessor(ICommandCommunicator communicator, string manual = null)
+
+        public CommandProcessor(string manual = null)
         {
             this.manual = manual;
             commandContainer = new CommandContainer();
-            this.communicator = communicator ?? new InteractiveCommandLineCommunicator("cmd");
-            this.communicator.ProcessCommandNamedArguments += ProcessCommandNamedParameters;
-            this.communicator.ProcessCommand += ProcessCommandOrderedParameters;
-            this.communicator.GetCommandsCallBack = commandContainer.GetCommands;
             RegisterObject(this);
             if (!string.IsNullOrEmpty(manual))
             {
                 commandContainer.AddCommand("help", new Usage(new DelegateExecutionMethod(() => manual, "help")));
             }
-            commandContainer.RegisterObject(communicator);
         }
 
         private string ProcessCommandOrderedParameters(string command, List<object> parameters)
@@ -73,17 +68,6 @@ namespace Nu.CommandLine
                 return string.IsNullOrEmpty(manual) ? "Invalid Parameters." : manual;
             }
             return string.IsNullOrEmpty(manual) ? "Bad Command." : manual;
-        }
-
-
-        public void Start()
-        {
-            communicator.Start();
-        }
-
-        public void Stop()
-        {
-            communicator.Stop();
         }
 
 

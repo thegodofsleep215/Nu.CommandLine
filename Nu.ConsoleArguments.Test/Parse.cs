@@ -1,7 +1,6 @@
-﻿using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Should;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Nu.ConsoleArguments;
+using Shouldly;
 
 namespace Test.Nu.ConsoleArgumentsTest
 {
@@ -141,7 +140,7 @@ namespace Test.Nu.ConsoleArgumentsTest
             var delimiter = ' ';
             var args = new[] { "-flag" };
             var actual = ConsoleArguments.Parse(args, denote, delimiter);
-            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.Count.ShouldBe(1);
             actual.Flags.ShouldContain("flag");
         }
 
@@ -152,10 +151,10 @@ namespace Test.Nu.ConsoleArgumentsTest
             var delimiter = ' ';
             var args = new[] { "-flag", "-foo", "\"bar foo\"" };
             var actual = ConsoleArguments.Parse(args, denote, delimiter);
-            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.Count.ShouldBe(1);
             actual.Flags.ShouldContain("flag");
             actual.NamedArguments.ContainsKey("foo").ShouldBeTrue();
-            actual.NamedArguments["foo"].ShouldEqual("bar foo");
+            actual.NamedArguments["foo"].ShouldBe("bar foo");
         }
 
         [TestMethod]
@@ -165,10 +164,10 @@ namespace Test.Nu.ConsoleArgumentsTest
             var delimiter = '=';
             var args = new[] { "-flag", "-foo=\"bar foo\"" };
             var actual = ConsoleArguments.Parse(args, denote, delimiter);
-            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.Count.ShouldBe(1);
             actual.Flags.ShouldContain("flag");
             actual.NamedArguments.ContainsKey("foo").ShouldBeTrue();
-            actual.NamedArguments["foo"].ShouldEqual("bar foo");
+            actual.NamedArguments["foo"].ShouldBe("bar foo");
         }
 
         [TestMethod]
@@ -178,10 +177,10 @@ namespace Test.Nu.ConsoleArgumentsTest
             var delimiter = ' ';
             var args = new[] { "-foo", "\"bar foo\"", "-flag" };
             var actual = ConsoleArguments.Parse(args, denote, delimiter);
-            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.Count.ShouldBe(1);
             actual.Flags.ShouldContain("flag");
             actual.NamedArguments.ContainsKey("foo").ShouldBeTrue();
-            actual.NamedArguments["foo"].ShouldEqual("bar foo");
+            actual.NamedArguments["foo"].ShouldBe("bar foo");
         }
 
         [TestMethod]
@@ -191,9 +190,9 @@ namespace Test.Nu.ConsoleArgumentsTest
             var delimiter = ' ';
             var args = new[] { "foo", "-flag" };
             var actual = ConsoleArguments.Parse(args, denote, delimiter);
-            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.Count.ShouldBe(1);
             actual.Flags.ShouldContain("flag");
-            actual.UnnamedArguments.Length.ShouldEqual(1);
+            actual.UnnamedArguments.Length.ShouldBe(1);
             actual.UnnamedArguments.ShouldContain("foo");
         }
 
@@ -204,9 +203,9 @@ namespace Test.Nu.ConsoleArgumentsTest
             var delimiter = '=';
             var args = new[] { "-flag", "foo" };
             var actual = ConsoleArguments.Parse(args, denote, delimiter);
-            actual.Flags.Count.ShouldEqual(1);
+            actual.Flags.Count.ShouldBe(1);
             actual.Flags.ShouldContain("flag");
-            actual.UnnamedArguments.Length.ShouldEqual(1);
+            actual.UnnamedArguments.Length.ShouldBe(1);
             actual.UnnamedArguments.ShouldContain("foo");
         }
 
